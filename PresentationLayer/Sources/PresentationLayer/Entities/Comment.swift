@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct Comment {
-	let postID, id: Int
-	let name, email, body: String
+public struct Comment {
+	public let postID, id: Int
+	public let name, email, body: String
 }

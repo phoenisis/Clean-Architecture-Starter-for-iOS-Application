@@ -9,11 +9,9 @@
 import Foundation
 import UIKit
 
-protocol Router {
-	associatedtype Route
-
+public protocol Router {
 	func route(
-		to routeID	: Route,
+		to routeID	: String,
 		parameters	: Any?
 	)
 }

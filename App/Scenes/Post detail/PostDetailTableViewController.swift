@@ -1,30 +1,37 @@
 //
-//  PostsTableViewController.swift
-//  RemoteLayer
+//  PostDetailTableViewController.swift
+//  CleanStartProject
 //
-//  Created by Quentin PIDOUX on 15/05/2020.
+//  Created by Quentin PIDOUX on 16/05/2020.
 //  Copyright © 2020 Quentin PIDOUX. All rights reserved.
 //
 
 import UIKit
+import Swinject
+import DomainLayer
+import PresentationLayer
 
-class PostsTableViewController: UITableViewController {
-	private var stateViewModel: PostsStateViewModel?
+class PostDetailTableViewController: UITableViewController {
+	public var postID: Int?
 
-	private var state: PostsStateViewModel.State = PostsStateViewModel.State() {
+	private var stateViewModel: PostDetailStateViewModel?
+
+	var state: PresentationLayer.PostDetailState = PostDetailState() {
 		didSet {
 			self.tableView.reloadData()
-			self.tableView.refreshControl?.endRefreshing()
 		}
 	}
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
-		stateViewModel = PostsStateViewModel(view: self, router: PostsRouter(context: self))
 
-		stateViewModel?.getAll()
+		guard let postID = postID else {
+			self.navigationController?.popViewController(animated: true)
+			return
+		}
 
-		self.title = "Posts"
+		self.stateViewModel = PostDetailStateViewModel(useCase: Assembler.shared.resolver.resolve(PostsUseCase.self)!, view: self)
+		self.stateViewModel?.getPostById(id: postID)
 
 		// Uncomment the following line to preserve selection between presentations
 		// self.clearsSelectionOnViewWillAppear = false
@@ -36,41 +43,66 @@ class PostsTableViewController: UITableViewController {
 	// MARK: - Table view data source
 
 	override func numberOfSections(in tableView: UITableView) -> Int {
-		return 1
+		// #warning Incomplete implementation, return the number of sections
+		return state.comments.isEmpty ? 1 : 2
+	}
+
+	override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+		switch section {
+			case 0:
+				return "Post"
+			case 1:
+				return "Comments"
+			default:
+			return nil
+		}
 	}
 
 	override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-		if state.loading || state.empty != nil || state.error != nil {
-			return 1
+		// #warning Incomplete implementation, return the number of rows
+		switch section {
+			case 0:
+				return 1
+			case 1:
+				return state.comments.count
+			default:
+				return 0
 		}
-
-		return state.posts.count
 	}
 
 	override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell = UITableViewCell(style: .default, reuseIdentifier: "\(indexPath)")
 		cell.textLabel?.numberOfLines = 0
+		cell.selectionStyle = .none
 
-		if state.loading {
-			cell.textLabel?.text = "Loading"
-		} else if let empty = state.empty {
-			cell.textLabel?.text = empty
-		} else if let error = state.error {
-			cell.textLabel?.text = error
+		if indexPath.section == 0 {
+			if state.loading {
+				cell.textLabel?.text = "Loading"
+			} else if let empty = state.empty {
+				cell.textLabel?.text = empty
+			} else if let error = state.error {
+				cell.textLabel?.text = error
+			} else {
+				cell.textLabel?.text = state.post?.title
+			}
 		} else {
-			if let post = state.posts.item(at: indexPath.row) {
-				cell.textLabel?.text = post.title
+			if let comment = state.comments.item(at: indexPath.row) {
+				cell.textLabel?.text = comment.body
 			}
 		}
 
 		return cell
 	}
 
-	override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-		if let post = state.posts.item(at: indexPath.row) {
-			self.stateViewModel?.showPostId(post.id)
-		}
+	/*
+	override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+	let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+	
+	// Configure the cell...
+	
+	return cell
 	}
+	*/
 
 	/*
 	// Override to support conditional editing of the table view.
@@ -117,14 +149,10 @@ class PostsTableViewController: UITableViewController {
 	}
 	*/
 
-	@IBAction
-	private func reloadData(_ sender: Any) {
-		self.stateViewModel?.getAll()
-	}
 }
 
-extension PostsTableViewController: PostsViewProtocol {
-	func viewUpdateWith(state: PostsStateViewModel.State) {
+extension PostDetailTableViewController: PostDetailViewProtocol {
+	func viewUpdateWith(state: PostDetailState) {
 		self.state = state
 	}
 }

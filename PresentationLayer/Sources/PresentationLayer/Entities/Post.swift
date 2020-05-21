@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct Post {
+public struct Post {
 	public let userID, id: Int
 	public let title, body: String
 }

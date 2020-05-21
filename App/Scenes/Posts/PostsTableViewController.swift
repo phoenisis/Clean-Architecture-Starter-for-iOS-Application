@@ -1,34 +1,40 @@
 //
-//  PostDetailTableViewController.swift
-//  CleanStartProject
+//  PostsTableViewController.swift
+//  RemoteLayer
 //
-//  Created by Quentin PIDOUX on 16/05/2020.
+//  Created by Quentin PIDOUX on 15/05/2020.
 //  Copyright © 2020 Quentin PIDOUX. All rights reserved.
 //
 
 import UIKit
+import Swinject
+import DomainLayer
+import PresentationLayer
 
-class PostDetailTableViewController: UITableViewController {
-	public var postID: Int?
+class PostsTableViewController: UITableViewController {
+	private var stateViewModel: PostsStateViewModel?
 
-	private var stateViewModel: PostDetailStateViewModel?
-
-	var state: PostDetailStateViewModel.State = PostDetailStateViewModel.State() {
+	private var state: PresentationLayer.PostState = PostState() {
 		didSet {
 			self.tableView.reloadData()
+			self.tableView.refreshControl?.endRefreshing()
 		}
 	}
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
 
-		guard let postID = postID else {
-			self.navigationController?.popViewController(animated: true)
-			return
+		let container = Container()
+		container.register(Router.self) { _ in
+			PostsRouter(context: self)
 		}
 
-		self.stateViewModel = PostDetailStateViewModel(view: self)
-		self.stateViewModel?.getPostById(id: postID)
+		stateViewModel = PostsStateViewModel(useCase: Assembler.shared.resolver.resolve(PostsUseCase.self)!,
+																				 view: self,
+																				 router: container.resolve(Router.self)!)
+		stateViewModel?.getAll()
+
+		self.title = "Posts"
 
 		// Uncomment the following line to preserve selection between presentations
 		// self.clearsSelectionOnViewWillAppear = false
@@ -40,66 +46,41 @@ class PostDetailTableViewController: UITableViewController {
 	// MARK: - Table view data source
 
 	override func numberOfSections(in tableView: UITableView) -> Int {
-		// #warning Incomplete implementation, return the number of sections
-		return state.comments.isEmpty ? 1 : 2
-	}
-
-	override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-		switch section {
-			case 0:
-				return "Post"
-			case 1:
-				return "Comments"
-			default:
-			return nil
-		}
+		return 1
 	}
 
 	override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-		// #warning Incomplete implementation, return the number of rows
-		switch section {
-			case 0:
-				return 1
-			case 1:
-				return state.comments.count
-			default:
-				return 0
+		if state.loading || state.empty != nil || state.error != nil {
+			return 1
 		}
+
+		return state.posts.count
 	}
 
 	override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let cell = UITableViewCell(style: .default, reuseIdentifier: "\(indexPath)")
 		cell.textLabel?.numberOfLines = 0
-		cell.selectionStyle = .none
 
-		if indexPath.section == 0 {
-			if state.loading {
-				cell.textLabel?.text = "Loading"
-			} else if let empty = state.empty {
-				cell.textLabel?.text = empty
-			} else if let error = state.error {
-				cell.textLabel?.text = error
-			} else {
-				cell.textLabel?.text = state.post?.title
-			}
+		if state.loading {
+			cell.textLabel?.text = "Loading"
+		} else if let empty = state.empty {
+			cell.textLabel?.text = empty
+		} else if let error = state.error {
+			cell.textLabel?.text = error
 		} else {
-			if let comment = state.comments.item(at: indexPath.row) {
-				cell.textLabel?.text = comment.body
+			if let post = state.posts.item(at: indexPath.row) {
+				cell.textLabel?.text = post.title
 			}
 		}
 
 		return cell
 	}
 
-	/*
-	override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-	let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-	
-	// Configure the cell...
-	
-	return cell
+	override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+		if let post = state.posts.item(at: indexPath.row) {
+			self.stateViewModel?.showPostId(post.id)
+		}
 	}
-	*/
 
 	/*
 	// Override to support conditional editing of the table view.
@@ -146,10 +127,14 @@ class PostDetailTableViewController: UITableViewController {
 	}
 	*/
 
+	@IBAction
+	private func reloadData(_ sender: Any) {
+		self.stateViewModel?.getAll()
+	}
 }
 
-extension PostDetailTableViewController: PostDetailViewProtocol {
-	func viewUpdateWith(state: PostDetailStateViewModel.State) {
+extension PostsTableViewController: PostViewProtocol {
+	func viewUpdateWith(state: PresentationLayer.PostState) {
 		self.state = state
 	}
 }

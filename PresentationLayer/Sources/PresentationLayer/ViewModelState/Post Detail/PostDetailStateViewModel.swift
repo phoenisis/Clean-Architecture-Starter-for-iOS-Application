@@ -9,36 +9,20 @@
 import Foundation
 import RxSwift
 import RxRelay
-import Swinject
 import DomainLayer
 
-protocol PostDetailViewProtocol {
-	func viewUpdateWith(state: PostDetailStateViewModel.State)
-}
-
-class PostDetailStateViewModel {
-	private let container = Container()
+open class PostDetailStateViewModel: PostDetailStateViewModelSource {
 	private var view: PostDetailViewProtocol?
-	public var state: Observable<State>
 
-	struct State {
-		var loading = false
-		var post : Post?
-		var comments: [Comment] = []
-		var empty: String?
-		var error: String?
-		var cancel = false
-	}
-
-	private let privateState = BehaviorRelay(value: State())
-	private let disposeBag = DisposeBag()
+	internal var state: Observable<PostDetailState>
+	internal var privateState = BehaviorRelay(value: PostDetailState())
+	internal let disposeBag = DisposeBag()
 
 	private let useCase: DomainLayer.PostsUseCase
 
-	init(view: PostDetailViewProtocol?) {
+	public init(useCase: PostsUseCase, view: PostDetailViewProtocol?) {
 
-		useCase = Assembler.shared.resolver.resolve(PostsUseCase.self)!
-
+		self.useCase = useCase
 		self.view = view
 		self.state = privateState.observeOn(MainScheduler.instance)
 
@@ -50,7 +34,7 @@ class PostDetailStateViewModel {
 	}
 
 	public func getPostById(id: Int) {
-		var state: PostDetailStateViewModel.State = {
+		var state: PostDetailState = {
 			var state = privateState.value
 			state.loading = true
 			state.post  = nil

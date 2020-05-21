@@ -1,5 +1,7 @@
 #  Clean Architecture Starter for iOS Application
-[![Swift 5.2](https://img.shields.io/badge/swift-5.2-blue.svg?style=flat)](https://swift.org/download/)
+[![IDE](https://img.shields.io/badge/Xcode-11-blue.svg)](https://developer.apple.com/xcode/)
+[![Language](https://img.shields.io/badge/swift-5.3-blue.svg?style=flat)](https://swift.org/download/)
+[![Platform](https://img.shields.io/badge/iOS-13-green.svg)](https://developer.apple.com/ios/)
 
 This project is a start project using a dummy REST API ([JSONPlaceholder](https://jsonplaceholder.typicode.com/))
 

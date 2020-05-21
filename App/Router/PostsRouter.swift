@@ -7,24 +7,19 @@
 //
 
 import Foundation
+import PresentationLayer
 import UIKit
 
-class PostsRouter: Router {
+open class PostsRouter: Router {
 	unowned private var context: UIViewController
-	typealias Route = PostsRoute
 
-	enum PostsRoute: String {
-		case detail
-	}
-
-	init(context: UIViewController) {
+	public init(context: UIViewController) {
 		self.context = context
 	}
 
-	func route(to routeID: Route, parameters: Any?) {
-
+	public func route(to routeID: String, parameters: Any?) {
 		switch routeID {
-			case .detail:
+			case "detail":
 				guard let view = R.storyboard.main.postDetail() else {
 					break
 				}
@@ -33,6 +28,8 @@ class PostsRouter: Router {
 				}
 
 				context.navigationController?.pushViewController(view, animated: true)
+			default:
+				break
 		}
 	}
 }

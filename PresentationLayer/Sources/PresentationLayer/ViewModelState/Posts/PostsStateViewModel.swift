@@ -9,36 +9,20 @@
 import Foundation
 import RxSwift
 import RxRelay
-import Swinject
 import DomainLayer
 
-protocol PostsViewProtocol {
-	func viewUpdateWith(state: PostsStateViewModel.State)
-}
+open class PostsStateViewModel: PostsStateViewModelSource {
+	private var view: PostViewProtocol?
+	private var router: Router?
 
-class PostsStateViewModel {
-	private let container = Container()
-	private var view: PostsViewProtocol?
-	private var router: PostsRouter?
+	public var state: Observable<PostState>
+	public var privateState = BehaviorRelay(value: PostState())
+	public let disposeBag = DisposeBag()
 
-	public let state: Observable<State>
+	private let useCase: DomainLayer.PostsUseCase?
 
-	struct State {
-		var loading = false
-		var posts: [Post] = []
-		var empty: String?
-		var error: String?
-		var cancel = false
-	}
-
-	private let privateState = BehaviorRelay(value: State())
-	private let disposeBag = DisposeBag()
-
-	private let useCase: DomainLayer.PostsUseCase
-
-	init(view: PostsViewProtocol?, router: PostsRouter?) {
-		useCase = Assembler.shared.resolver.resolve(PostsUseCase.self)!
-
+	public init(useCase: DomainLayer.PostsUseCase, view: PostViewProtocol?, router: Router) {
+		self.useCase = useCase
 		self.view = view
 		self.router = router
 		self.state = privateState.observeOn(MainScheduler.instance)
@@ -51,7 +35,7 @@ class PostsStateViewModel {
 	}
 
 	public func getAll() {
-		var state: PostsStateViewModel.State = {
+		var state: PostState = {
 			var state = privateState.value
 			state.loading = true
 			state.posts = []
@@ -62,7 +46,7 @@ class PostsStateViewModel {
 		}()
 		privateState.accept(state)
 
-		useCase.getAll()
+		useCase?.getAll()
 			.subscribeOn(ConcurrentDispatchQueueScheduler(qos: .background))
 			.map { (input) -> [Post] in
 				PostMapper().transform(input: input)
@@ -84,6 +68,6 @@ class PostsStateViewModel {
 	}
 
 	public func showPostId(_ id: Int) {
-		self.router?.route(to: .detail, parameters: id)
+		self.router?.route(to: "detail", parameters: id)
 	}
 }

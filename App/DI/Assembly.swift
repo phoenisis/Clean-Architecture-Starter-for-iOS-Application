@@ -12,6 +12,7 @@ import Swinject
 import RemoteLayer
 import DataLayer
 import DomainLayer
+import PresentationLayer
 
 class DataSourceAssembly: Assembly {
 	func assemble(container: Container) {
