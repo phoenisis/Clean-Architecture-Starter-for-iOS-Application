@@ -20,8 +20,16 @@ class DataSourceAssembly: Assembly {
 			PostSource()
 		}
 
+		container.register(PostDataCacheSource.self) { _ in
+			PostCDSource()
+		}
+
 		container.register(CommentDataSource.self) { _  in
 			CommentSource()
+		}
+
+		container.register(CommentDataCacheSource.self) { _  in
+			CommentCDSource()
 		}
 	}
 }
@@ -29,11 +37,13 @@ class DataSourceAssembly: Assembly {
 class RepositoryAssembly: Assembly {
 	func assemble(container: Container) {
 		container.register(PostsRepositorySource.self) { resolver in
-			PostsRepository(postSource: resolver.resolve(PostDataSource.self)!)
+			PostsRepository(postSource: resolver.resolve(PostDataSource.self)!,
+											postCacheSource: resolver.resolve(PostDataCacheSource.self)!)
 		}
 
 		container.register(CommentsRepositorySource.self) { resolver in
-			CommentsRepository(commentSource: resolver.resolve(CommentDataSource.self)!)
+			CommentsRepository(commentSource: resolver.resolve(CommentDataSource.self)!,
+												 commentCacheSource: resolver.resolve(CommentDataCacheSource.self)!)
 		}
 	}
 }

@@ -12,9 +12,11 @@ import RxSwift
 
 open class PostsRepository: PostsRepositorySource {
 	private let remoteSource: PostDataSource
+	private let cacheSource : PostDataCacheSource
 
-	public init(postSource: PostDataSource) {
+	public init(postSource: PostDataSource, postCacheSource: PostDataCacheSource) {
 		self.remoteSource = postSource
+		self.cacheSource  = postCacheSource
 	}
 
 	public func getAllPosts() -> Observable<[DomainLayer.PostDomain]> {
@@ -25,9 +27,20 @@ open class PostsRepository: PostsRepositorySource {
 	}
 
 	public func getPost(id: Int) -> Observable<DomainLayer.PostDomain> {
-		return remoteSource.getPost(id: id)
-			.map { (input) -> DomainLayer.PostDomain in
-				PostDataMapper().transform(input: input)
+		cacheSource.isCached(id: id)
+			.flatMap { (isCached) -> Observable<PostData> in
+				if isCached {
+					return self.cacheSource.fetch(id: id)
+				} else {
+					return self.remoteSource.getPost(id: id)
+						.flatMap { (input) -> Observable<PostData> in
+							self.cacheSource.create(data: input)
+								.andThen(Observable.just(input))
+					}
+				}
+		}.map { (input) -> DomainLayer.PostDomain in
+			PostDataMapper().transform(input: input)
 		}
+
 	}
 }

@@ -32,7 +32,7 @@ brew install swiftlint
 ## To do
 * [x] Add RemoteLayer.
 * [x] Add Router exemple.
-* [ ] Add CoreDataLayer.
+* [x] Add CoreDataLayer.
 * [ ] Add UnitTests.
 
 ## Reading
